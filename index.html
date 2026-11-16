@@ -2,218 +2,993 @@
 <html lang="bg">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Практическо изпитване – Eclipse Mars и Swing Designer</title>
+<title>Eclipse Mars.2 - Swing Designer Симулатор</title>
 <style>
-:root{font-family:Arial,sans-serif;color:#202938;background:#f3f5f8}
-*{box-sizing:border-box}body{margin:0;padding:18px}
-#app{max-width:850px;margin:auto}
-.panel{background:white;border:1px solid #dce1e8;border-radius:14px;padding:18px;margin:12px 0;box-shadow:0 2px 8px #14213d0a}
-h1,h2,h3{margin-top:0}.muted{color:#667085}.primary{background:#2463eb;color:white;border:0;border-radius:9px;padding:12px 18px;font-weight:bold;cursor:pointer;width:100%;font-size:15px}
-input{width:100%;padding:12px;border:1px solid #cbd2dc;border-radius:8px;font-size:16px;margin:8px 0}
-.choice{width:100%;text-align:left;padding:13px;border:1px solid #dce1e8;border-radius:9px;background:white;cursor:pointer;font-size:15px;margin:5px 0}
-.choice:disabled{cursor:default}.good{border:2px solid #218b50;background:#eaf7ef}.bad{border:2px solid #c34d4d;background:#fff0f0}
-.ide{background:#242424;color:#eee;border:1px solid #555;border-radius:8px;font:13px/1.8 monospace;overflow:hidden;margin:12px 0}
-.idebar{background:#383838;padding:8px}.idebody{padding:14px}
-.meter{height:9px;background:#e3e7ed;border-radius:9px;overflow:hidden;margin-top:10px}.meter div{height:100%;background:#23985b}
-.feedback{padding:12px;border-radius:9px;margin-top:12px;line-height:1.5}.feedback.good{background:#eaf7ef;border:1px solid #218b50}.feedback.bad{background:#fff0f0;border:1px solid #c34d4d}
-.hidden{display:none!important}.overlay{position:fixed;inset:0;z-index:10000;background:#10151df2;display:flex;align-items:center;justify-content:center;padding:20px;color:white}
-.overlaybox{max-width:440px;width:100%;background:#272d38;border:1px solid #657083;border-radius:14px;padding:24px;text-align:center}
-.small{font-size:13px}.center{text-align:center}
-@media(max-width:550px){body{padding:8px}.panel{padding:13px}}
+  * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+  body { margin: 0; padding: 0; background: #e1e1e1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  
+  /* Меню бар */
+  .menubar { background: #f0f0f0; border-bottom: 1px solid #ccc; display: flex; padding: 2px 5px; font-size: 13px; }
+  .menu-item { padding: 4px 10px; cursor: pointer; position: relative; }
+  .menu-item:hover { background: #cce8ff; }
+  
+  .dropdown { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #999; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); z-index: 1000; min-width: 160px; }
+  .dropdown.show { display: block; }
+  .dd-item { padding: 6px 14px; cursor: pointer; color: #000; position: relative; display: flex; justify-content: space-between; align-items: center; }
+  .dd-item:hover { background: #0078d7; color: #fff; }
+  
+  .submenu { display: none; position: absolute; top: -1px; left: 100%; background: #fff; border: 1px solid #999; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); min-width: 190px; }
+  .dd-item:hover > .submenu { display: block; }
+  
+  /* Тулбар */
+  .toolbar { background: #f5f5f5; border-bottom: 1px solid #ccc; padding: 4px 10px; display: flex; align-items: center; gap: 10px; }
+  .btn-run { background: #28a745; color: white; border: none; padding: 5px 14px; border-radius: 3px; cursor: pointer; font-weight: bold; }
+  .btn-run:hover { background: #218838; }
+  .btn-run:disabled { background: #aaa; cursor: not-allowed; }
+  .guide-badge { margin-left: auto; background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 4px 10px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+
+  /* Основна работна площ */
+  .workspace { display: flex; flex: 1; overflow: hidden; }
+  
+  /* Package Explorer */
+  .pkg-explorer { width: 250px; background: #fff; border-right: 1px solid #ccc; display: flex; flex-direction: column; }
+  .panel-header { background: #e8e8e8; padding: 5px 8px; font-size: 12px; font-weight: bold; border-bottom: 1px solid #ccc; color: #333; }
+  .tree { padding: 8px; font-size: 13px; flex: 1; overflow-y: auto; }
+  .tree-item { padding: 4px 6px; cursor: pointer; border-radius: 2px; }
+  .tree-item:hover { background: #e5f3ff; }
+  .tree-indent-1 { margin-left: 15px; }
+  .tree-indent-2 { margin-left: 30px; }
+  .tree-indent-3 { margin-left: 45px; }
+
+  /* Редактор */
+  .editor-area { flex: 1; display: flex; flex-direction: column; background: #f9f9f9; }
+  .editor-tabs { background: #e0e0e0; border-bottom: 1px solid #ccc; display: flex; height: 28px; }
+  .editor-tab { background: #fff; padding: 5px 12px; font-size: 12px; border-right: 1px solid #ccc; font-weight: bold; }
+  .editor-content { flex: 1; display: flex; overflow: hidden; position: relative; }
+  
+  #sourceView { width: 100%; height: 100%; padding: 12px; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; border: none; resize: none; outline: none; background: #fff; color: #000; user-select: text; line-height: 1.5; }
+  
+  /* Design View */
+  #designView { display: none; width: 100%; height: 100%; flex-direction: row; }
+  .wb-structure { width: 220px; background: #fff; border-right: 1px solid #ccc; display: flex; flex-direction: column; }
+  .properties-panel { flex: 1; overflow-y: auto; font-size: 12px; }
+  .prop-row { display: flex; border-bottom: 1px solid #eee; }
+  .prop-name { width: 45%; padding: 5px 6px; background: #f7f7f7; border-right: 1px solid #eee; font-weight: 500; }
+  .prop-val { width: 55%; padding: 2px; }
+  .prop-val input { width: 100%; border: 1px solid #ccc; padding: 3px 4px; font-size: 12px; user-select: text; }
+
+  .wb-palette { width: 165px; background: #f0f0f0; border-right: 1px solid #ccc; padding: 5px; font-size: 12px; }
+  .palette-cat { font-weight: bold; background: #dcdcdc; padding: 4px 6px; margin-top: 5px; margin-bottom: 4px; }
+  .palette-item { padding: 5px 6px; cursor: pointer; border: 1px solid transparent; }
+  .palette-item:hover { background: #e0eef9; border-color: #99d1ff; }
+  .palette-item.active { background: #cce8ff; border-color: #0078d7; font-weight: bold; }
+
+  .wb-canvas-area { flex: 1; background: #e9e9e9; padding: 20px; overflow: auto; position: relative; }
+  
+  .jframe-window { width: 430px; height: 310px; background: #f0f0f0; border: 2px solid #0078d7; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; position: relative; }
+  .jframe-titlebar { background: #0078d7; color: white; padding: 5px 8px; font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; cursor: pointer; }
+  .jframe-content { flex: 1; position: relative; overflow: hidden; }
+  .jframe-content.border-layout { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+
+  /* Swing компоненти */
+  .swing-comp { position: absolute; border: 1px dashed transparent; }
+  .swing-comp.movable { cursor: move; }
+  .swing-comp.locked { position: relative !important; left: auto !important; top: auto !important; width: 95% !important; margin: 4px auto; cursor: pointer; }
+  .swing-comp.selected { border: 1px dashed #ff0000; outline: 1px solid rgba(255,0,0,0.3); }
+  .comp-jlabel { font-size: 13px; color: #000; padding: 2px; white-space: nowrap; }
+  .comp-jtextfield { background: #fff; border: 1px solid #7a7a7a; padding: 2px 4px; font-size: 13px; }
+  .comp-jbutton { background: #e1e1e1; border: 1px solid #adadad; padding: 3px 10px; font-size: 13px; text-align: center; }
+
+  .bottom-tabs { background: #e0e0e0; border-top: 1px solid #ccc; display: flex; padding-left: 5px; }
+  .btab { padding: 4px 14px; font-size: 12px; cursor: pointer; border: 1px solid transparent; border-top: none; }
+  .btab.active { background: #fff; border-color: #ccc; font-weight: bold; }
+
+  /* Контекстно меню с подменюта */
+  .context-menu { display: none; position: fixed; background: #fff; border: 1px solid #999; box-shadow: 2px 2px 6px rgba(0,0,0,0.25); z-index: 1500; font-size: 12px; min-width: 180px; }
+  
+  /* Модални прозорци */
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center; }
+  .modal { background: #f0f0f0; border: 1px solid #666; width: 390px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); font-size: 13px; }
+  .modal-header { background: #fff; padding: 8px 12px; font-weight: bold; border-bottom: 1px solid #ccc; }
+  .modal-body { padding: 15px; }
+  .modal-body input { width: 100%; padding: 6px; margin-top: 6px; border: 1px solid #999; user-select: text; }
+  .modal-footer { padding: 8px 12px; background: #e5e5e5; border-top: 1px solid #ccc; text-align: right; }
+  .modal-footer button { padding: 5px 14px; margin-left: 5px; cursor: pointer; }
+
+  /* Дърво в съветника New -> Other */
+  .wizard-tree { background: #fff; border: 1px solid #999; height: 150px; overflow-y: auto; padding: 6px; margin-top: 6px; }
+  .w-node { padding: 3px 6px; cursor: pointer; }
+  .w-node:hover { background: #e5f3ff; }
+  .w-node.selected { background: #0078d7; color: #fff; }
+
+  /* Run Mode */
+  .run-window { width: 430px; height: 310px; background: #f0f0f0; border: 1px solid #333; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
+  .run-titlebar { background: #2b579a; color: white; padding: 5px 10px; font-size: 13px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+  .run-close { background: #e81123; color: white; border: none; padding: 2px 8px; cursor: pointer; font-weight: bold; }
+  .run-content { flex: 1; position: relative; }
+  
+  .joptionpane { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f0f0f0; border: 1px solid #555; box-shadow: 0 5px 20px rgba(0,0,0,0.4); z-index: 3000; min-width: 260px; }
+  .jop-header { background: #fff; padding: 5px 10px; font-size: 12px; font-weight: bold; border-bottom: 1px solid #ccc; }
+  .jop-body { padding: 20px; display: flex; align-items: center; gap: 15px; font-size: 13px; }
+  .jop-icon { width: 28px; height: 28px; background: #0078d7; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: serif; font-size: 18px; }
+  .jop-footer { padding: 8px; text-align: center; background: #e5e5e5; }
+  .action-btn { width: 100%; margin-top: 8px; padding: 6px; background: #0078d7; color: #fff; border: none; border-radius: 2px; cursor: pointer; font-weight: bold; }
+  .action-btn:hover { background: #005a9e; }
 </style>
 </head>
 <body>
-<main id="app">
-<div class="center muted small">☕ ECLIPSE MARS · SWING DESIGNER · ПРАКТИЧЕСКО ИЗПИТВАНЕ</div>
-<section class="panel" id="login">
- <div class="center" style="font-size:42px">🎓</div>
- <h1 class="center">Практическо изпитване</h1>
- <p class="center muted">Създаване на Java проект с графичен интерфейс в Eclipse Mars</p>
- <label for="studentId"><b>Идентификационен код на ученика</b></label>
- <input id="studentId" maxlength="6" placeholder="Например 8А-15" autocomplete="off">
- <p class="muted small">Формат: 8X-Y, където X е буквата на класа, а Y е номерът в класа.</p>
- <div id="loginError" class="hidden" style="color:#b42318" role="alert"></div>
- <button class="primary" id="start">🚀 Започни изпитването</button>
- <div class="panel" style="background:#f7f8fa;box-shadow:none">
-  <b>Условия на изпитването</b>
-  <ul class="small">
-   <li>26 въпроса; 10 точки за верен отговор.</li>
-   <li>Максимален резултат: 260 точки.</li>
-   <li>Един опит с този код в този браузър.</li>
-   <li>При втори опит за напускане изпитването се прекратява с оценка Слаб (2).</li>
-  </ul>
- </div>
-</section>
-<section id="game" class="hidden">
- <div class="panel">
-  <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b id="studentLabel"></b><b id="score">0 точки</b></div>
-  <div class="meter"><div id="bar" style="width:0%"></div></div>
-  <div class="small muted" style="display:flex;justify-content:space-between;margin-top:7px"><span id="number">Въпрос 1 от 26</span><span>Изпитване в ход</span></div>
- </div>
- <div class="panel">
-  <div class="muted small" id="category"></div>
-  <div class="ide" id="visual"></div>
-  <h2 id="question"></h2>
-  <div id="options"></div>
-  <div id="feedback" class="hidden feedback" aria-live="polite"></div>
-  <button id="next" class="primary hidden" style="margin-top:12px">Следващ въпрос →</button>
- </div>
-</section>
-<section id="result" class="panel hidden center">
- <div id="resultIcon" style="font-size:52px">🏆</div>
- <h1 id="resultTitle">Изпитването е приключило</h1>
- <p id="resultStudent" class="muted"></p>
- <div id="finalScore" style="font-size:36px;font-weight:bold;margin:20px"></div>
- <h2 id="grade"></h2>
- <p id="details"></p>
-<div id="gradingInfo" class="panel" style="text-align:left;background:#f7f8fa"></div>
- <div id="review" class="panel" style="text-align:left"></div>
-</section>
-</main>
-<div id="warning" class="overlay hidden" role="alertdialog" aria-modal="true">
- <div class="overlaybox">
-  <div style="font-size:42px">⚠️</div>
-  <h2>Внимание! Опит за излизане!</h2>
-  <p>Това е първото ти предупреждение.</p>
-  <p>При втори опит за напускане на играта изпитването ще бъде прекратено автоматично и ще бъде поставена оценка <b style="color:#ff7777">Слаб (2)</b>.</p>
-  <button id="return" class="primary">Разбрах. Продължавам изпитването</button>
- </div>
-</div>
-<div id="kicked" class="overlay hidden" role="alertdialog" aria-modal="true">
- <div class="overlaybox">
-  <div style="font-size:48px">⛔</div>
-  <h2>Изпитването е прекратено!</h2>
-  <p>Направен е втори опит за напускане на играта.</p>
-  <h1 style="color:#ff7777">СЛАБ (2)</h1>
-  <button id="showResult" class="primary">Покажи резултата</button>
- </div>
-</div>
+
+  <!-- Меню бар -->
+  <div class="menubar">
+    <div class="menu-item" id="menuFile">File
+      <div class="dropdown" id="fileDropdown">
+        <div class="dd-item">New <span>&#9656;</span>
+          <div class="submenu">
+            <div class="dd-item" id="btnNewJavaProject">Java Project</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="menu-item">Edit</div>
+    <div class="menu-item">Source</div>
+    <div class="menu-item">Refactor</div>
+    <div class="menu-item">Window</div>
+    <div class="menu-item">Help</div>
+  </div>
+
+  <!-- Тулбар -->
+  <div class="toolbar">
+    <button class="btn-run" id="runBtn" disabled>Run</button>
+    <span style="font-size: 12px; color: #555;">Eclipse IDE for Java Developers (Mars.2)</span>
+    <div class="guide-badge" id="stepGuide">Стъпка 1: Изберете File &rarr; New &rarr; Java Project</div>
+  </div>
+
+  <!-- Основна работна площ -->
+  <div class="workspace">
+    <div class="pkg-explorer">
+      <div class="panel-header">Package Explorer</div>
+      <div class="tree" id="pkgTree">
+        <div style="color:#888; font-size:12px;">Няма създадени проекти.</div>
+      </div>
+    </div>
+
+    <div class="editor-area">
+      <div class="editor-tabs" id="editorTabs"></div>
+      
+      <div class="editor-content" id="editorContent" style="display:none;">
+        <textarea id="sourceView" spellcheck="false"></textarea>
+        
+        <div id="designView">
+          <div class="wb-structure">
+            <div class="panel-header">Properties</div>
+            <div class="properties-panel" id="propertiesPanel">
+              <div style="padding:10px; color:#666;">Маркирайте елемент от формата</div>
+            </div>
+          </div>
+
+          <div class="wb-palette">
+            <div class="panel-header">Palette</div>
+            <div class="palette-cat">Layouts</div>
+            <div class="palette-item" id="tool-absolute">Absolute Layout</div>
+            <div class="palette-cat">Components</div>
+            <div class="palette-item" id="tool-jlabel">JLabel</div>
+            <div class="palette-item" id="tool-jtextfield">JTextField</div>
+            <div class="palette-item" id="tool-jbutton">JButton</div>
+          </div>
+
+          <div class="wb-canvas-area">
+            <div class="jframe-window" id="designFrame">
+              <div class="jframe-titlebar" id="frameTitleBar">
+                <span id="designFrameTitle">JFrame</span>
+                <span>_ &square; &times;</span>
+              </div>
+              <div class="jframe-content border-layout" id="designCanvas"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-tabs" id="bottomTabs" style="display:none;">
+        <div class="btab active" id="tabSource">Source</div>
+        <div class="btab" id="tabDesign">Design</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Контекстно меню за src -->
+  <div class="context-menu" id="ctxSrc">
+    <div class="dd-item">New <span>&#9656;</span>
+      <div class="submenu">
+        <div class="dd-item" id="ctxNewPkg">Package</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Контекстно меню за пакета -->
+  <div class="context-menu" id="ctxPkg">
+    <div class="dd-item">New <span>&#9656;</span>
+      <div class="submenu">
+        <div class="dd-item" id="ctxNewOther">Other...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Контекстно меню за .java файла -->
+  <div class="context-menu" id="ctxFile">
+    <div class="dd-item">Open With <span>&#9656;</span>
+      <div class="submenu">
+        <div class="dd-item" id="ctxOpenWB">WindowBuilder Editor</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модал 1: New Java Project -->
+  <div class="modal-overlay" id="projectModal">
+    <div class="modal">
+      <div class="modal-header">New Java Project</div>
+      <div class="modal-body">
+        <label>Project name:</label>
+        <input type="text" id="inpProjectName" placeholder="напр. MyProject">
+      </div>
+      <div class="modal-footer">
+        <button id="btnFinishProject">Finish</button>
+        <button class="btnCloseModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модал 2: New Java Package -->
+  <div class="modal-overlay" id="packageModal">
+    <div class="modal">
+      <div class="modal-header">New Java Package</div>
+      <div class="modal-body">
+        <label>Name (въведете edu.school):</label>
+        <input type="text" id="inpPkgName" value="edu.school">
+      </div>
+      <div class="modal-footer">
+        <button id="btnFinishPkg">Finish</button>
+        <button class="btnCloseModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модал 3: New -> Other -> WindowBuilder -> Swing Designer -> JFrame -->
+  <div class="modal-overlay" id="wizardModal">
+    <div class="modal">
+      <div class="modal-header">Select a wizard</div>
+      <div class="modal-body">
+        <label>Изберете WindowBuilder &rarr; Swing Designer &rarr; JFrame:</label>
+        <div class="wizard-tree">
+          <div class="w-node" id="wizWB">&#9656; WindowBuilder</div>
+          <div class="w-node" id="wizSD" style="display:none; padding-left:20px;">&#9656; Swing Designer</div>
+          <div class="w-node" id="wizJF" style="display:none; padding-left:40px;">JFrame</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnWizardNext" disabled>Next &gt;</button>
+        <button class="btnCloseModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модал 4: Име на JFrame -->
+  <div class="modal-overlay" id="jframeModal">
+    <div class="modal">
+      <div class="modal-header">New JFrame</div>
+      <div class="modal-body">
+        <label>Name (завършващо на Frame, напр. nameFrame):</label>
+        <input type="text" id="inpFrameName" placeholder="nameFrame">
+      </div>
+      <div class="modal-footer">
+        <button id="btnFinishFrame">Finish</button>
+        <button class="btnCloseModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Прозорец при изпълнение (Run) -->
+  <div class="modal-overlay" id="runModal">
+    <div class="run-window">
+      <div class="run-titlebar">
+        <span id="runWindowTitle">JFrame</span>
+        <button class="run-close" id="btnCloseRun">&times;</button>
+      </div>
+      <div class="run-content" id="runCanvas"></div>
+    </div>
+  </div>
+
 <script>
-(()=>{
-'use strict';
-const $=id=>document.getElementById(id);
-const STORE='eclipse_mars_exam_v4_';
-const questions=[
-['Създаване на проект','Коя е първата стъпка за създаване на проект в Eclipse?',['File → New','File → Open File','Window → Preferences','Run → Java Project'],0,'Правилният път е File → New.'],
-['Създаване на проект','Какъв тип проект избираш от разгъналото се меню?',['Java Project','Java Package','Java Class','JFrame'],0,'Избира се Java Project.'],
-['Създаване на проект','Какво въвеждаш в полето Project name в появилия се прозорец?',['Името на проекта, например SchoolApp','edu.school','MainFrame.java','JFrame'],0,'В Project name се записва името на проекта.'],
-['Създаване на пакет','Върху коя папка щракваш с десен бутон, за да създадеш пакет?',['src','bin','JRE System Library','MainFrame.java'],0,'Пакетите се създават в папката src.'],
-['Създаване на пакет','Коя команда избираш след десен бутон върху src, за да създадеш пакет?',['New → Package','New → Java Project','Open With → Text Editor','Run As → Java Application'],0,'Избираш New → Package.'],
-['Създаване на пакет','Какво име трябва да въведеш за пакета?',['edu.school','SchoolApp','MainFrame','edu.school.java'],0,'Името на пакета е edu.school.'],
-['Създаване на JFrame','Върху кой елемент щракваш с десен бутон, за да създадеш JFrame?',['edu.school','bin','JRE System Library','Заглавната лента'],0,'Класът се създава в пакета edu.school.'],
-['Създаване на JFrame','Кой е правилният път за създаване на JFrame?',['New → Other → WindowsBuilder → Swing Designer → JFrame','New → Java Project → JFrame','File → Open → JFrame','Run → Swing Designer → JFrame'],0,'Избираш New → Other → WindowsBuilder → Swing Designer → JFrame.'],
-['Създаване на JFrame','Какво име трябва да зададеш на прозореца(фрейма)?',['nameFrame','namePackage','nameProject','nameLabel'],0,'Например SchoolFrame.'],
-['Графичен редактор','Как отваряш проекта с графичния редактор?',['Десен бутон върху .java → Open With → WindowsBuilder Editor','Двоен клик върху src','File → New → Java Project','Run → Design'],0,'Избираш Open With → WindowsBuilder Editor.'],
-['Графичен редактор','Кой изглед избираш за графично проектиране?',['Design','Source','Console','Problems'],0,'Избираш Design.'],
-['Свойства на прозореца','Кое свойство задава текста в заглавната лента на JFrame?',['title','text','Variable','name'],0,'Свойството title задава заглавието на прозореца.'],
-['Етикет JLabel','Кой инструмент използваш за създаване на етикет?',['JLabel','JTextField','JButton','JFrame'],0,'JLabel създава етикет.'],
-['Етикет JLabel','Кое свойство задава видимия текст на етикета?',['text','title','Variable','layout'],0,'Свойството text задава текста на JLabel.'],
-['Етикет JLabel','С какво трябва да започва стойността на свойство Variable за етикет?',['lbl','txt','btn','frm'],0,'Префиксът е lbl, например lblIme.'],
-['Текстово поле','Кой инструмент създава текстово поле за въвеждане?',['JTextField','JLabel','JButton','JPanel'],0,'JTextField позволява въвеждане на текст.'],
-['Текстово поле','Кое свойство задава началния текст в JTextField?',['text','title','Variable','action'],0,'Свойството text задава началния текст.'],
-['Текстово поле','С какво започва стойността на свойство Variable за текстово поле?',['txt','lbl','btn','frm'],0,'Префиксът е txt, например txtIme.'],
-['Бутон JButton','Кой инструмент създава бутон?',['JButton','JLabel','JTextField','JFrame'],0,'JButton създава бутон.'],
-['Бутон JButton','Кое свойство задава надписа върху бутона?',['text','title','Variable','layout'],0,'Свойството text задава надписа.'],
-['Бутон JButton','С какво започва стойността на свойство Variable за бутон?',['btn','lbl','txt','frm'],0,'Префиксът е btn, например btnIzhod.'],
-['Разположение','Кой Layout позволява свободно местене и преоразмеряване на компонентите?',['Absolute Layout','Border Layout','Grid Layout','Flow Layout'],0,'Absolute Layout позволява свободно позициониране.'],
-['Действие на бутон','Как се задава действие на бутон?',['Двукратно щракване върху бутона','Еднократно щракване върху заглавната лента','Десен бутон върху проекта → Delete','Двукратно щракване върху папката src'],0,'Двукратното щракване генерира обработчик на събитие.'],
-['Действие на бутон','Къде се записва кодът за действието на бутона?',['Вътре в тялото на метода public void ..., непосредствено след отварящата фигурна скоба {','Преди декларацията public void','След затварящата фигурна скоба на метода }','В свойството title на прозореца'],0,'Кодът се записва вътре в метода, непосредствено след отварящата фигурна скоба { на public void ... .'],
-['Бутон Изход','Кой код затваря програмата при натискане на бутон Изход?',['System.exit(0);','JOptionPane.showMessageDialog(null,"Изход");','System.out.println("Изход");','this.dispose("0");'],0,'System.exit(0); прекратява изпълнението на програмата.'],
-['Диалогова кутия','Кой код показва текст в стандартна диалогова кутия?',['JOptionPane.showMessageDialog(null,"Здравей!");','System.exit(0);','System.out.println("Здравей!");','JLabel.setText("Здравей!");'],0,'JOptionPane.showMessageDialog(null,"текст на съобщението"); показва диалогова кутия.']
-];
+  var state = {
+    project: null,
+    pkg: null,
+    frameClass: null,
+    hasAbsoluteLayout: false,
+    frameTitle: "",
+    activeTool: null,
+    selectedId: null,
+    components: []
+  };
 
-const visuals=[
- ['Eclipse IDE','<div style="font-size:28px">☕ Eclipse IDE</div><br><br>Работна област<br><br>Welcome to Eclipse'],
- ['Project Explorer','📁 Работна област<br><br>📁 Проект 1<br>📁 Проект 2<br>📁 Проект 3'],
- ['Java Editor','<div style="color:#a9c7ff">Java Editor</div><br><br>Редактор за програмен код<br><br>public class MyApplication<br>{<br>　// Java application<br>}'],
- ['Swing Designer','<div style="font-size:22px">▣ Swing Designer</div><br><br>Графична работна област<br><br>Компоненти и оформление'],
- ['Design View','┌────────────────────┐<br>│　　　　　　　　　│<br>│　Графичен прозорец │<br>│　　　　　　　　　│<br>└────────────────────┘'],
- ['Properties Panel','<b>Properties</b><br><br>Component<br>Appearance<br>Layout<br>Advanced'],
- ['Swing Components','<b>Component Palette</b><br><br>▤ Компонент 1<br>▱ Компонент 2<br>▣ Компонент 3'],
- ['Layout View','<b>Работна област</b><br><br>┌──────────────────┐<br>│　　　　　　　　│<br>│　　　　　　　　│<br>└──────────────────┘'],
- ['Java Workspace','<b>Java Development</b><br><br>Source Editor<br>Project Explorer<br>Console'],
- ['Application Window','<b>Preview</b><br><br>┌──────────────────┐<br>│　Приложение　　　│<br>│　　　　　　　　│<br>└──────────────────┘']
-];
+  function updateGuide(text) {
+    document.getElementById('stepGuide').textContent = text;
+  }
 
-let index=0,score=0,wrong=0,student='',exitAttempts=0,finished=false,shuffled=[];
-function key(id){return STORE+id.toUpperCase()}
-function shuffle(){shuffled=questions.map((q,i)=>({q,answers:q[2].map((a,j)=>({a,j})).sort(()=>Math.random()-.5)}));}
-function render(){
- const q=shuffled[index].q;
- $('category').textContent=q[0];$('question').textContent=q[1];
- const visual=visuals[Math.min(Math.floor(index/3),visuals.length-1)];
- $('visual').innerHTML='<div class="idebar">'+visual[0]+'</div><div class="idebody">'+visual[1]+'</div>';
- $('options').innerHTML='';$('feedback').classList.add('hidden');$('next').classList.add('hidden');
- shuffled[index].answers.forEach(item=>{
-  const b=document.createElement('button');b.className='choice';b.textContent=item.a;
-  b.addEventListener('click',()=>answer(item.j));$('options').appendChild(b);
- });
- $('score').textContent=score+' точки';$('number').textContent=`Въпрос ${index+1} от 26`;$('bar').style.width=(index/26*100)+'%';
-}
-function answer(n){
- if(finished)return;
- const q=shuffled[index].q,correct=n===q[3];
- if(correct)score+=10;else wrong++;
- [...$('options').children].forEach(b=>{b.disabled=true;if(b.textContent===q[2][q[3]])b.classList.add('good');else if(b.textContent===q[2][n])b.classList.add('bad')});
- $('score').textContent=score+' точки';$('feedback').className='feedback '+(correct?'good':'bad');
- $('feedback').textContent=(correct?'✓ Правилен отговор! +10 точки. ':'✗ Грешен отговор. ')+q[4];
- $('next').classList.remove('hidden');$('next').textContent=index===25?'Приключи изпитването':'Следващ въпрос →';
-}
-function save(state){
- try{localStorage.setItem(key(student),JSON.stringify({state,score,wrong,index,exitAttempts,finished:true,date:new Date().toISOString()}));}catch(e){}
-}
-function showResult(failed){
- if(finished)return;finished=true;if(failed)score=0;save(failed?'failed':'completed');
- $('game').classList.add('hidden');$('warning').classList.add('hidden');$('kicked').classList.add('hidden');$('result').classList.remove('hidden');
- $('resultIcon').textContent=failed?'⛔':'🏆';$('resultTitle').textContent=failed?'Изпитването е прекратено':'Изпитването е приключило';
- $('resultStudent').textContent='Ученик: '+student;$('finalScore').textContent=failed?'0 / 260':score+' / 260';
- $('grade').textContent='Оценка: '+(failed?'Слаб (2)':grade(score));
- $('details').textContent=failed?'Оценката е поставена поради повторен опит за напускане.':`Верни отговори: ${26-wrong} от 26. Грешни отговори: ${wrong}.`;
- $('review').textContent=failed?'Изпитването е прекратено по правилата.':'Резултатът е записан за идентификационен код '+student+'.';
-}
-$('gradingInfo').innerHTML = `
-<h3>Формула за оценяване</h3>
-<p>Всеки верен отговор носи 10 точки.</p>
-<p><b>Общ брой точки = брой верни отговори × 10</b></p>
-<hr>
-<h3>Скала за оценяване</h3>
-<table style="width:100%;border-collapse:collapse">
-<tr><td>234–260 точки (>90%)</td><td>Отличен (6)</td></tr>
-<tr><td>208–233 точки (80%)</td><td>Много добър (5)</td></tr>
-<tr><td>166–207 точки (64%)</td><td>Добър (4)</td></tr>
-<tr><td>130–165 точки (50%)</td><td>Среден (3)</td></tr>
-<tr><td>0–129 точки (<50%)</td><td>Слаб (2)</td></tr>
-</table>
-`;
-function grade(s){if(s>=234)return'Отличен (6)';if(s>=208)return'Много добър (5)';if(s>=166)return'Добър (4)';if(s>=130)return'Среден (3)';return'Слаб (2)';}
-async function fullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();}catch(e){/* Fullscreen може да е забранен от браузъра. */}}
-function active(){return !finished&&!$('game').classList.contains('hidden');}
-function exitAttempt(){
- if(!active())return;
- exitAttempts++;
- if(exitAttempts===1){$('warning').classList.remove('hidden');}
- else{$('kicked').classList.remove('hidden');save('failed');}
-}
-document.addEventListener('fullscreenchange',()=>{if(active()&&!document.fullscreenElement)exitAttempt();});
-document.addEventListener('visibilitychange',()=>{if(active()&&document.visibilityState==='hidden')exitAttempt();});
-window.addEventListener('beforeunload',e=>{if(active()){e.preventDefault();e.returnValue='При напускане на изпитването може да бъде поставена оценка Слаб (2).';}});
-$('start').addEventListener('click',async()=>{
- const id=$('studentId').value.trim().toUpperCase().replace(/\s/g,'');
- if(!/^8[A-ZА-Я]-\d{1,2}$/.test(id)){$('loginError').textContent='Невалиден код. Използвай формат 8А-15.';$('loginError').classList.remove('hidden');return;}
- let prior=null;try{prior=localStorage.getItem(key(id));}catch(e){}
- if(prior){$('loginError').textContent='Този код вече е използван в този браузър. Не може да се започне нов опит.';$('loginError').classList.remove('hidden');return;}
- student=id;
- try{localStorage.setItem(key(student),JSON.stringify({state:'started',date:new Date().toISOString()}));}
- catch(e){$('loginError').textContent='Не може да се запише опитът. Разреши локалното съхранение в браузъра.';$('loginError').classList.remove('hidden');return;}
- shuffle();$('studentLabel').textContent='Ученик: '+student;$('login').classList.add('hidden');$('game').classList.remove('hidden');
- await fullscreen();render();
-});
-$('next').addEventListener('click',()=>{if(index===26)showResult(false);else{index++;render();}});
-$('return').addEventListener('click',async()=>{$('warning').classList.add('hidden');await fullscreen();});
-$('showResult').addEventListener('click',()=>showResult(true));
-$('studentId').addEventListener('input',()=>{$('studentId').value=$('studentId').value.toUpperCase().replace(/\s/g,'');});
-})();
+  function closeAllMenus() {
+    document.getElementById('fileDropdown').classList.remove('show');
+    document.getElementById('ctxSrc').style.display = 'none';
+    document.getElementById('ctxPkg').style.display = 'none';
+    document.getElementById('ctxFile').style.display = 'none';
+  }
+
+  function closeModals() {
+    document.getElementById('projectModal').style.display = 'none';
+    document.getElementById('packageModal').style.display = 'none';
+    document.getElementById('wizardModal').style.display = 'none';
+    document.getElementById('jframeModal').style.display = 'none';
+  }
+
+  document.addEventListener('click', function() {
+    closeAllMenus();
+  });
+
+  // Меню File
+  document.getElementById('menuFile').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = document.getElementById('fileDropdown');
+    var isOpen = dd.classList.contains('show');
+    closeAllMenus();
+    if (!isOpen) {
+      dd.classList.add('show');
+    }
+  });
+
+  document.getElementById('btnNewJavaProject').addEventListener('click', function(e) {
+    e.stopPropagation();
+    closeAllMenus();
+    closeModals();
+    document.getElementById('projectModal').style.display = 'flex';
+    document.getElementById('inpProjectName').focus();
+  });
+
+  var closeBtns = document.querySelectorAll('.btnCloseModal');
+  for (var i = 0; i < closeBtns.length; i++) {
+    closeBtns[i].addEventListener('click', closeModals);
+  }
+
+  // Стъпка 1: Създаване на проект
+  document.getElementById('btnFinishProject').addEventListener('click', function() {
+    var name = document.getElementById('inpProjectName').value.trim();
+    if (!name) {
+      alert("Въведете име на проекта!");
+      return;
+    }
+    state.project = name;
+    closeModals();
+    renderTree();
+    updateGuide("Стъпка 2: Десен бутон върху 'src' -> New -> Package (edu.school)");
+  });
+
+  // Стъпка 2: Създаване на пакет
+  document.getElementById('ctxNewPkg').addEventListener('click', function(e) {
+    e.stopPropagation();
+    closeAllMenus();
+    closeModals();
+    document.getElementById('packageModal').style.display = 'flex';
+  });
+
+  document.getElementById('btnFinishPkg').addEventListener('click', function() {
+    var name = document.getElementById('inpPkgName').value.trim();
+    if (!name) {
+      alert("Въведете име на пакета!");
+      return;
+    }
+    state.pkg = name;
+    closeModals();
+    renderTree();
+    updateGuide("Стъпка 3: Десен бутон върху '" + name + "' -> New -> Other... -> WindowBuilder -> Swing Designer -> JFrame");
+  });
+
+  // Стъпка 3: Съветник New -> Other...
+  document.getElementById('ctxNewOther').addEventListener('click', function(e) {
+    e.stopPropagation();
+    closeAllMenus();
+    closeModals();
+    document.getElementById('wizSD').style.display = 'none';
+    document.getElementById('wizJF').style.display = 'none';
+    document.getElementById('wizJF').classList.remove('selected');
+    document.getElementById('btnWizardNext').disabled = true;
+    document.getElementById('wizardModal').style.display = 'flex';
+  });
+
+  document.getElementById('wizWB').addEventListener('click', function() {
+    document.getElementById('wizSD').style.display = 'block';
+  });
+
+  document.getElementById('wizSD').addEventListener('click', function() {
+    document.getElementById('wizJF').style.display = 'block';
+  });
+
+  document.getElementById('wizJF').addEventListener('click', function() {
+    document.getElementById('wizJF').classList.add('selected');
+    document.getElementById('btnWizardNext').disabled = false;
+  });
+
+  document.getElementById('btnWizardNext').addEventListener('click', function() {
+    closeModals();
+    document.getElementById('jframeModal').style.display = 'flex';
+    document.getElementById('inpFrameName').focus();
+  });
+
+  document.getElementById('btnFinishFrame').addEventListener('click', function() {
+    var name = document.getElementById('inpFrameName').value.trim();
+    if (!name) {
+      alert("Въведете име на прозореца (напр. nameFrame)!");
+      return;
+    }
+    state.frameClass = name;
+    closeModals();
+    renderTree();
+    openFileInEditor();
+    updateGuide("Стъпка 4: Десен бутон върху '" + name + ".java' -> Open With -> WindowBuilder Editor");
+  });
+
+  function renderTree() {
+    var tree = document.getElementById('pkgTree');
+    tree.innerHTML = '';
+
+    var pEl = document.createElement('div');
+    pEl.className = 'tree-item';
+    pEl.innerHTML = '<b>' + state.project + '</b>';
+    tree.appendChild(pEl);
+
+    var sEl = document.createElement('div');
+    sEl.className = 'tree-item tree-indent-1';
+    sEl.textContent = 'src';
+    sEl.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAllMenus();
+      var m = document.getElementById('ctxSrc');
+      m.style.left = e.pageX + 'px';
+      m.style.top = e.pageY + 'px';
+      m.style.display = 'block';
+    });
+    tree.appendChild(sEl);
+
+    if (state.pkg) {
+      var pkgEl = document.createElement('div');
+      pkgEl.className = 'tree-item tree-indent-2';
+      pkgEl.textContent = state.pkg;
+      pkgEl.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAllMenus();
+        var m = document.getElementById('ctxPkg');
+        m.style.left = e.pageX + 'px';
+        m.style.top = e.pageY + 'px';
+        m.style.display = 'block';
+      });
+      tree.appendChild(pkgEl);
+    }
+
+    if (state.frameClass) {
+      var fEl = document.createElement('div');
+      fEl.className = 'tree-item tree-indent-3';
+      fEl.textContent = state.frameClass + '.java';
+      fEl.addEventListener('click', openFileInEditor);
+      fEl.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAllMenus();
+        var m = document.getElementById('ctxFile');
+        m.style.left = e.pageX + 'px';
+        m.style.top = e.pageY + 'px';
+        m.style.display = 'block';
+      });
+      tree.appendChild(fEl);
+    }
+  }
+
+  function openFileInEditor() {
+    document.getElementById('editorTabs').innerHTML = '<div class="editor-tab">' + state.frameClass + '.java</div>';
+    document.getElementById('editorContent').style.display = 'flex';
+    document.getElementById('runBtn').disabled = false;
+    generateJavaCode();
+  }
+
+  document.getElementById('ctxOpenWB').addEventListener('click', function(e) {
+    e.stopPropagation();
+    closeAllMenus();
+    document.getElementById('bottomTabs').style.display = 'flex';
+    updateGuide("Стъпка 4б: Отдолу превключете на изглед 'Design'");
+  });
+
+  function switchTab(mode) {
+    document.getElementById('tabSource').classList.toggle('active', mode === 'source');
+    document.getElementById('tabDesign').classList.toggle('active', mode === 'design');
+    if (mode === 'source') {
+      document.getElementById('sourceView').style.display = 'block';
+      document.getElementById('designView').style.display = 'none';
+    } else {
+      document.getElementById('sourceView').style.display = 'none';
+      document.getElementById('designView').style.display = 'flex';
+      updateGuide("Стъпка 5 и 6: Задайте title на формата и добавете компоненти от Palette");
+    }
+  }
+
+  document.getElementById('tabSource').addEventListener('click', function() { switchTab('source'); });
+  document.getElementById('tabDesign').addEventListener('click', function() { switchTab('design'); });
+
+  // Работа с Palette и платното
+  function selectTool(tool) {
+    state.activeTool = tool;
+    var items = document.querySelectorAll('.palette-item');
+    for (var i = 0; i < items.length; i++) {
+      items[i].classList.remove('active');
+    }
+    document.getElementById('tool-' + tool).classList.add('active');
+  }
+
+  document.getElementById('tool-absolute').addEventListener('click', function() { selectTool('absolute'); });
+  document.getElementById('tool-jlabel').addEventListener('click', function() { selectTool('jlabel'); });
+  document.getElementById('tool-jtextfield').addEventListener('click', function() { selectTool('jtextfield'); });
+  document.getElementById('tool-jbutton').addEventListener('click', function() { selectTool('jbutton'); });
+
+  document.getElementById('frameTitleBar').addEventListener('click', function() { selectComponent('frame'); });
+
+  document.getElementById('designCanvas').addEventListener('click', function(e) {
+    if (e.target.id !== 'designCanvas') return;
+
+    if (state.activeTool === 'absolute') {
+      state.hasAbsoluteLayout = true;
+      var canvas = document.getElementById('designCanvas');
+      canvas.classList.remove('border-layout');
+      clearTool();
+      renderCanvasComponents();
+      generateJavaCode();
+      updateGuide("Absolute Layout е приложен! Вече можете свободно да местите елементите върху формата.");
+      return;
+    }
+
+    if (state.activeTool) {
+      var rect = e.target.getBoundingClientRect();
+      var x = Math.round(e.clientX - rect.left);
+      var y = Math.round(e.clientY - rect.top);
+      addComponent(state.activeTool, x, y);
+      clearTool();
+    } else {
+      selectComponent('frame');
+    }
+  });
+
+  function clearTool() {
+    state.activeTool = null;
+    var items = document.querySelectorAll('.palette-item');
+    for (var i = 0; i < items.length; i++) {
+      items[i].classList.remove('active');
+    }
+  }
+
+  function addComponent(type, x, y) {
+    var count = state.components.filter(function(c) { return c.type === type; }).length + 1;
+    var varName = '', text = '', w = 100, h = 25;
+    if (type === 'jlabel') { varName = 'lblLabel' + count; text = 'New label'; w = 90; h = 20; }
+    if (type === 'jtextfield') { varName = 'txtField' + count; text = ''; w = 120; h = 22; }
+    if (type === 'jbutton') { varName = 'btnButton' + count; text = 'New button'; w = 95; h = 25; }
+
+    var comp = {
+      id: 'c_' + Date.now(),
+      type: type,
+      varName: varName,
+      text: text,
+      x: x,
+      y: y,
+      width: w,
+      height: h,
+      hasListener: false,
+      actionCode: ''
+    };
+    state.components.push(comp);
+    renderCanvasComponents();
+    selectComponent(comp.id);
+    generateJavaCode();
+
+    if (!state.hasAbsoluteLayout) {
+      updateGuide("Съвет: Изберете 'Absolute Layout' от палитрата и щракнете върху формата, за да местите елемента свободно.");
+    }
+  }
+
+  function openButtonEvent(comp) {
+    comp.hasListener = true;
+    generateJavaCode();
+    switchTab('source');
+    updateGuide("Стъпка 7: Напишете кода на бутона вътре в actionPerformed (напр. System.exit(0);) и натиснете Run!");
+
+    var ta = document.getElementById('sourceView');
+    var code = ta.value;
+    var marker = comp.varName + '.addActionListener';
+    var idx = code.indexOf(marker);
+    if (idx !== -1) {
+      var apIdx = code.indexOf('actionPerformed', idx);
+      var braceIdx = code.indexOf('{', apIdx);
+      if (braceIdx !== -1) {
+        var cursorPos = braceIdx + 6;
+        ta.focus();
+        ta.setSelectionRange(cursorPos, cursorPos);
+      }
+    }
+  }
+
+  function renderCanvasComponents() {
+    var canvas = document.getElementById('designCanvas');
+    canvas.innerHTML = '';
+
+    state.components.forEach(function(c) {
+      var el = document.createElement('div');
+      var layoutClass = state.hasAbsoluteLayout ? 'movable' : 'locked';
+      el.className = 'swing-comp ' + layoutClass + (state.selectedId === c.id ? ' selected' : '');
+      el.style.left = c.x + 'px';
+      el.style.top = c.y + 'px';
+      el.style.width = c.width + 'px';
+      el.style.height = c.height + 'px';
+
+      if (c.type === 'jlabel') { el.classList.add('comp-jlabel'); el.textContent = c.text; }
+      if (c.type === 'jtextfield') { el.classList.add('comp-jtextfield'); el.textContent = c.text; }
+      if (c.type === 'jbutton') {
+        el.classList.add('comp-jbutton');
+        el.textContent = c.text;
+        el.addEventListener('dblclick', function(e) {
+          e.stopPropagation();
+          openButtonEvent(c);
+        });
+      }
+
+      el.addEventListener('mousedown', function(e) {
+        e.stopPropagation();
+        selectComponent(c.id);
+        if (!state.hasAbsoluteLayout) return;
+
+        var startX = e.clientX - c.x;
+        var startY = e.clientY - c.y;
+        function onMove(ev) {
+          c.x = Math.max(0, Math.min(350, ev.clientX - startX));
+          c.y = Math.max(0, Math.min(250, ev.clientY - startY));
+          el.style.left = c.x + 'px';
+          el.style.top = c.y + 'px';
+          generateJavaCode();
+        }
+        function onUp() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      canvas.appendChild(el);
+    });
+  }
+
+  function selectComponent(id) {
+    state.selectedId = id;
+    renderCanvasComponents();
+    var panel = document.getElementById('propertiesPanel');
+    panel.innerHTML = '';
+
+    if (id === 'frame') {
+      addPropRow(panel, 'Component', 'JFrame', true);
+      addPropRow(panel, 'title', state.frameTitle, false, function(val) {
+        state.frameTitle = val;
+        document.getElementById('designFrameTitle').textContent = val || 'JFrame';
+        generateJavaCode();
+      });
+      return;
+    }
+
+    var comp = state.components.find(function(c) { return c.id === id; });
+    if (!comp) return;
+
+    var hint = comp.type === 'jlabel' ? 'lbl...' : (comp.type === 'jtextfield' ? 'txt...' : 'btn...');
+    addPropRow(panel, 'Type', comp.type, true);
+    addPropRow(panel, 'Variable (' + hint + ')', comp.varName, false, function(val) {
+      comp.varName = val;
+      generateJavaCode();
+    });
+    addPropRow(panel, 'text', comp.text, false, function(val) {
+      comp.text = val;
+      renderCanvasComponents();
+      generateJavaCode();
+    });
+    addPropRow(panel, 'width', comp.width, false, function(val) {
+      comp.width = parseInt(val, 10) || 60;
+      renderCanvasComponents();
+      generateJavaCode();
+    });
+    addPropRow(panel, 'height', comp.height, false, function(val) {
+      comp.height = parseInt(val, 10) || 22;
+      renderCanvasComponents();
+      generateJavaCode();
+    });
+
+    if (comp.type === 'jbutton') {
+      var box = document.createElement('div');
+      box.style.padding = '8px';
+      var hintDiv = document.createElement('div');
+      hintDiv.style.fontSize = '11px';
+      hintDiv.style.color = '#0056b3';
+      hintDiv.innerHTML = 'Щракнете <b>двукратно</b> върху бутона във формата или използвайте бутона отдолу, за да напишете кода му:';
+      box.appendChild(hintDiv);
+
+      var btnCode = document.createElement('button');
+      btnCode.className = 'action-btn';
+      btnCode.textContent = 'Отвори actionPerformed (код)';
+      btnCode.addEventListener('click', function() {
+        openButtonEvent(comp);
+      });
+      box.appendChild(btnCode);
+      panel.appendChild(box);
+    }
+  }
+
+  function addPropRow(panel, label, value, readOnly, onChange) {
+    var row = document.createElement('div');
+    row.className = 'prop-row';
+    var nameDiv = document.createElement('div');
+    nameDiv.className = 'prop-name';
+    nameDiv.textContent = label;
+    var valDiv = document.createElement('div');
+    valDiv.className = 'prop-val';
+
+    if (readOnly) {
+      valDiv.style.padding = '4px';
+      valDiv.textContent = value;
+    } else {
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = value;
+      inp.addEventListener('input', function() { onChange(inp.value); });
+      valDiv.appendChild(inp);
+    }
+    row.appendChild(nameDiv);
+    row.appendChild(valDiv);
+    panel.appendChild(row);
+  }
+
+  function generateJavaCode() {
+    var lines = [];
+    lines.push('package ' + state.pkg + ';');
+    lines.push('');
+    lines.push('import java.awt.EventQueue;');
+    lines.push('import java.awt.BorderLayout;');
+    lines.push('import javax.swing.JFrame;');
+    lines.push('import javax.swing.JPanel;');
+    lines.push('import javax.swing.border.EmptyBorder;');
+    lines.push('import javax.swing.JLabel;');
+    lines.push('import javax.swing.JTextField;');
+    lines.push('import javax.swing.JButton;');
+    lines.push('import javax.swing.JOptionPane;');
+    lines.push('import java.awt.event.ActionListener;');
+    lines.push('import java.awt.event.ActionEvent;');
+    lines.push('');
+    lines.push('public class ' + state.frameClass + ' extends JFrame {');
+    lines.push('');
+    lines.push('	private JPanel contentPane;');
+
+    state.components.forEach(function(c) {
+      if (c.type === 'jtextfield') {
+        lines.push('	private JTextField ' + c.varName + ';');
+      }
+    });
+
+    lines.push('');
+    lines.push('	public static void main(String[] args) {');
+    lines.push('		EventQueue.invokeLater(new Runnable() {');
+    lines.push('			public void run() {');
+    lines.push('				try {');
+    lines.push('					' + state.frameClass + ' frame = new ' + state.frameClass + '();');
+    lines.push('					frame.setVisible(true);');
+    lines.push('				} catch (Exception e) {');
+    lines.push('					e.printStackTrace();');
+    lines.push('				}');
+    lines.push('			}');
+    lines.push('		});');
+    lines.push('	}');
+    lines.push('');
+    lines.push('	public ' + state.frameClass + '() {');
+    if (state.frameTitle) {
+      lines.push('		setTitle("' + state.frameTitle + '");');
+    }
+    lines.push('		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);');
+    lines.push('		setBounds(100, 100, 450, 300);');
+    lines.push('		contentPane = new JPanel();');
+    lines.push('		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));');
+    lines.push('		' + (state.hasAbsoluteLayout ? 'contentPane.setLayout(null);' : 'contentPane.setLayout(new BorderLayout(0, 0));'));
+    lines.push('		setContentPane(contentPane);');
+    lines.push('');
+
+    state.components.forEach(function(c) {
+      if (c.type === 'jlabel') {
+        lines.push('		JLabel ' + c.varName + ' = new JLabel("' + c.text + '");');
+        if (state.hasAbsoluteLayout) {
+          lines.push('		' + c.varName + '.setBounds(' + c.x + ', ' + c.y + ', ' + c.width + ', ' + c.height + ');');
+        }
+        lines.push('		contentPane.add(' + c.varName + ');');
+        lines.push('');
+      } else if (c.type === 'jtextfield') {
+        lines.push('		' + c.varName + ' = new JTextField("' + c.text + '");');
+        if (state.hasAbsoluteLayout) {
+          lines.push('		' + c.varName + '.setBounds(' + c.x + ', ' + c.y + ', ' + c.width + ', ' + c.height + ');');
+        }
+        lines.push('		contentPane.add(' + c.varName + ');');
+        lines.push('');
+      } else if (c.type === 'jbutton') {
+        lines.push('		JButton ' + c.varName + ' = new JButton("' + c.text + '");');
+        if (c.hasListener) {
+          lines.push('		' + c.varName + '.addActionListener(new ActionListener() {');
+          lines.push('			public void actionPerformed(ActionEvent e) {');
+          lines.push('				' + (c.actionCode ? c.actionCode : ''));
+          lines.push('			}');
+          lines.push('		});');
+        }
+        if (state.hasAbsoluteLayout) {
+          lines.push('		' + c.varName + '.setBounds(' + c.x + ', ' + c.y + ', ' + c.width + ', ' + c.height + ');');
+        }
+        lines.push('		contentPane.add(' + c.varName + ');');
+        lines.push('');
+      }
+    });
+
+    lines.push('	}');
+    lines.push('}');
+    document.getElementById('sourceView').value = lines.join('\n');
+  }
+
+  function syncCodeFromTextarea() {
+    var code = document.getElementById('sourceView').value;
+    state.components.forEach(function(btn) {
+      if (btn.type !== 'jbutton') return;
+      var marker = btn.varName + '.addActionListener';
+      var idx = code.indexOf(marker);
+      if (idx === -1) return;
+      var apIdx = code.indexOf('actionPerformed', idx);
+      if (apIdx === -1) return;
+      var openBrace = code.indexOf('{', apIdx);
+      if (openBrace === -1) return;
+
+      var depth = 1;
+      var pos = openBrace + 1;
+      while (pos < code.length && depth > 0) {
+        if (code[pos] === '{') depth++;
+        else if (code[pos] === '}') depth--;
+        pos++;
+      }
+      if (depth === 0) {
+        btn.hasListener = true;
+        btn.actionCode = code.substring(openBrace + 1, pos - 1).trim();
+      }
+    });
+  }
+
+  document.getElementById('sourceView').addEventListener('input', syncCodeFromTextarea);
+
+  // Стартиране (RUN)
+  document.getElementById('runBtn').addEventListener('click', function() {
+    syncCodeFromTextarea();
+    document.getElementById('runWindowTitle').textContent = state.frameTitle || state.frameClass;
+    var runCanvas = document.getElementById('runCanvas');
+    runCanvas.innerHTML = '';
+    var runtimeInputs = {};
+
+    state.components.forEach(function(c, index) {
+      var x = state.hasAbsoluteLayout ? c.x : 20;
+      var y = state.hasAbsoluteLayout ? c.y : (20 + index * 35);
+      var w = state.hasAbsoluteLayout ? c.width : 380;
+      var h = state.hasAbsoluteLayout ? c.height : 28;
+
+      if (c.type === 'jlabel') {
+        var lbl = document.createElement('div');
+        lbl.style.position = 'absolute';
+        lbl.style.left = x + 'px';
+        lbl.style.top = y + 'px';
+        lbl.style.fontSize = '13px';
+        lbl.textContent = c.text;
+        runCanvas.appendChild(lbl);
+      } else if (c.type === 'jtextfield') {
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = c.text;
+        inp.style.position = 'absolute';
+        inp.style.left = x + 'px';
+        inp.style.top = y + 'px';
+        inp.style.width = w + 'px';
+        inp.style.height = h + 'px';
+        inp.style.fontSize = '13px';
+        runCanvas.appendChild(inp);
+        runtimeInputs[c.varName] = inp;
+      } else if (c.type === 'jbutton') {
+        var btn = document.createElement('button');
+        btn.textContent = c.text;
+        btn.style.position = 'absolute';
+        btn.style.left = x + 'px';
+        btn.style.top = y + 'px';
+        btn.style.width = w + 'px';
+        btn.style.height = h + 'px';
+        btn.style.fontSize = '13px';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', function() {
+          executeJavaAction(c.actionCode, runtimeInputs);
+        });
+        runCanvas.appendChild(btn);
+      }
+    });
+
+    document.getElementById('runModal').style.display = 'flex';
+  });
+
+  document.getElementById('btnCloseRun').addEventListener('click', closeRun);
+
+  function closeRun() {
+    var dialogs = document.querySelectorAll('.joptionpane');
+    for (var i = 0; i < dialogs.length; i++) {
+      dialogs[i].remove();
+    }
+    document.getElementById('runModal').style.display = 'none';
+  }
+
+  function executeJavaAction(code, inputs) {
+    if (!code) return;
+    if (code.indexOf('System.exit(0)') !== -1) {
+      closeRun();
+      return;
+    }
+
+    var searchStart = 0;
+    while (true) {
+      var callIdx = code.indexOf('JOptionPane.showMessageDialog', searchStart);
+      if (callIdx === -1) break;
+      var openParen = code.indexOf('(', callIdx);
+      var commaIdx = code.indexOf(',', openParen);
+      var endStmt = code.indexOf(');', commaIdx);
+      if (commaIdx !== -1 && endStmt !== -1) {
+        var expr = code.substring(commaIdx + 1, endStmt).trim();
+        var msg = evaluateExpr(expr, inputs);
+        showJOptionPane(msg);
+        searchStart = endStmt + 2;
+      } else {
+        break;
+      }
+    }
+  }
+
+  function evaluateExpr(expr, inputs) {
+    var parts = expr.split('+');
+    var result = '';
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i].trim();
+      if (p.charAt(0) === '"' && p.charAt(p.length - 1) === '"') {
+        result += p.substring(1, p.length - 1);
+      } else if (p.indexOf('.getText()') !== -1) {
+        var varName = p.replace('.getText()', '').trim();
+        if (inputs[varName]) {
+          result += inputs[varName].value;
+        }
+      } else {
+        result += p;
+      }
+    }
+    return result;
+  }
+
+  function showJOptionPane(message) {
+    var dialog = document.createElement('div');
+    dialog.className = 'joptionpane';
+    dialog.innerHTML = '<div class="jop-header">Message</div><div class="jop-body"><div class="jop-icon">i</div><div></div></div><div class="jop-footer"><button>OK</button></div>';
+    dialog.querySelector('.jop-body div:last-child').textContent = message;
+    dialog.querySelector('button').addEventListener('click', function() {
+      dialog.remove();
+    });
+    document.body.appendChild(dialog);
+  }
 </script>
 </body>
 </html>
