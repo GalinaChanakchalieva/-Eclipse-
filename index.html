@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Практическо изпитване – Eclipse Mars и Swing Designer</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#202938;background:#f3f5f8}
+*{box-sizing:border-box}body{margin:0;padding:18px}
+#app{max-width:850px;margin:auto}
+.panel{background:white;border:1px solid #dce1e8;border-radius:14px;padding:18px;margin:12px 0;box-shadow:0 2px 8px #14213d0a}
+h1,h2,h3{margin-top:0}.muted{color:#667085}.primary{background:#2463eb;color:white;border:0;border-radius:9px;padding:12px 18px;font-weight:bold;cursor:pointer;width:100%;font-size:15px}
+input{width:100%;padding:12px;border:1px solid #cbd2dc;border-radius:8px;font-size:16px;margin:8px 0}
+.choice{width:100%;text-align:left;padding:13px;border:1px solid #dce1e8;border-radius:9px;background:white;cursor:pointer;font-size:15px;margin:5px 0}
+.choice:disabled{cursor:default}.good{border:2px solid #218b50;background:#eaf7ef}.bad{border:2px solid #c34d4d;background:#fff0f0}
+.ide{background:#242424;color:#eee;border:1px solid #555;border-radius:8px;font:13px/1.8 monospace;overflow:hidden;margin:12px 0}
+.idebar{background:#383838;padding:8px}.idebody{padding:14px}
+.meter{height:9px;background:#e3e7ed;border-radius:9px;overflow:hidden;margin-top:10px}.meter div{height:100%;background:#23985b}
+.feedback{padding:12px;border-radius:9px;margin-top:12px;line-height:1.5}.feedback.good{background:#eaf7ef;border:1px solid #218b50}.feedback.bad{background:#fff0f0;border:1px solid #c34d4d}
+.hidden{display:none!important}.overlay{position:fixed;inset:0;z-index:10000;background:#10151df2;display:flex;align-items:center;justify-content:center;padding:20px;color:white}
+.overlaybox{max-width:440px;width:100%;background:#272d38;border:1px solid #657083;border-radius:14px;padding:24px;text-align:center}
+.small{font-size:13px}.center{text-align:center}
+@media(max-width:550px){body{padding:8px}.panel{padding:13px}}
+</style>
+</head>
+<body>
+<main id="app">
+<div class="center muted small">☕ ECLIPSE MARS · SWING DESIGNER · ПРАКТИЧЕСКО ИЗПИТВАНЕ</div>
+<section class="panel" id="login">
+ <div class="center" style="font-size:42px">🎓</div>
+ <h1 class="center">Практическо изпитване</h1>
+ <p class="center muted">Създаване на Java проект с графичен интерфейс в Eclipse Mars</p>
+ <label for="studentId"><b>Идентификационен код на ученика</b></label>
+ <input id="studentId" maxlength="6" placeholder="Например 8А-15" autocomplete="off">
+ <p class="muted small">Формат: 8X-Y, където X е буквата на класа, а Y е номерът в класа.</p>
+ <div id="loginError" class="hidden" style="color:#b42318" role="alert"></div>
+ <button class="primary" id="start">🚀 Започни изпитването</button>
+ <div class="panel" style="background:#f7f8fa;box-shadow:none">
+  <b>Условия на изпитването</b>
+  <ul class="small">
+   <li>26 въпроса; 10 точки за верен отговор.</li>
+   <li>Максимален резултат: 260 точки.</li>
+   <li>Един опит с този код в този браузър.</li>
+   <li>При втори опит за напускане изпитването се прекратява с оценка Слаб (2).</li>
+  </ul>
+ </div>
+</section>
+<section id="game" class="hidden">
+ <div class="panel">
+  <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b id="studentLabel"></b><b id="score">0 точки</b></div>
+  <div class="meter"><div id="bar" style="width:0%"></div></div>
+  <div class="small muted" style="display:flex;justify-content:space-between;margin-top:7px"><span id="number">Въпрос 1 от 26</span><span>Изпитване в ход</span></div>
+ </div>
+ <div class="panel">
+  <div class="muted small" id="category"></div>
+  <div class="ide" id="visual"></div>
+  <h2 id="question"></h2>
+  <div id="options"></div>
+  <div id="feedback" class="hidden feedback" aria-live="polite"></div>
+  <button id="next" class="primary hidden" style="margin-top:12px">Следващ въпрос →</button>
+ </div>
+</section>
+<section id="result" class="panel hidden center">
+ <div id="resultIcon" style="font-size:52px">🏆</div>
+ <h1 id="resultTitle">Изпитването е приключило</h1>
+ <p id="resultStudent" class="muted"></p>
+ <div id="finalScore" style="font-size:36px;font-weight:bold;margin:20px"></div>
+ <h2 id="grade"></h2>
+ <p id="details"></p>
+<div id="gradingInfo" class="panel" style="text-align:left;background:#f7f8fa"></div>
+ <div id="review" class="panel" style="text-align:left"></div>
+</section>
+</main>
+<div id="warning" class="overlay hidden" role="alertdialog" aria-modal="true">
+ <div class="overlaybox">
+  <div style="font-size:42px">⚠️</div>
+  <h2>Внимание! Опит за излизане!</h2>
+  <p>Това е първото ти предупреждение.</p>
+  <p>При втори опит за напускане на играта изпитването ще бъде прекратено автоматично и ще бъде поставена оценка <b style="color:#ff7777">Слаб (2)</b>.</p>
+  <button id="return" class="primary">Разбрах. Продължавам изпитването</button>
+ </div>
+</div>
+<div id="kicked" class="overlay hidden" role="alertdialog" aria-modal="true">
+ <div class="overlaybox">
+  <div style="font-size:48px">⛔</div>
+  <h2>Изпитването е прекратено!</h2>
+  <p>Направен е втори опит за напускане на играта.</p>
+  <h1 style="color:#ff7777">СЛАБ (2)</h1>
+  <button id="showResult" class="primary">Покажи резултата</button>
+ </div>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const STORE='eclipse_mars_exam_v4_';
+const questions=[
+['Създаване на проект','Коя е първата стъпка за създаване на проект в Eclipse?',['File → New','File → Open File','Window → Preferences','Run → Java Project'],0,'Правилният път е File → New.'],
+['Създаване на проект','Какъв тип проект избираш от разгъналото се меню?',['Java Project','Java Package','Java Class','JFrame'],0,'Избира се Java Project.'],
+['Създаване на проект','Какво въвеждаш в полето Project name в появилия се прозорец?',['Името на проекта, например SchoolApp','edu.school','MainFrame.java','JFrame'],0,'В Project name се записва името на проекта.'],
+['Създаване на пакет','Върху коя папка щракваш с десен бутон, за да създадеш пакет?',['src','bin','JRE System Library','MainFrame.java'],0,'Пакетите се създават в папката src.'],
+['Създаване на пакет','Коя команда избираш след десен бутон върху src, за да създадеш пакет?',['New → Package','New → Java Project','Open With → Text Editor','Run As → Java Application'],0,'Избираш New → Package.'],
+['Създаване на пакет','Какво име трябва да въведеш за пакета?',['edu.school','SchoolApp','MainFrame','edu.school.java'],0,'Името на пакета е edu.school.'],
+['Създаване на JFrame','Върху кой елемент щракваш с десен бутон, за да създадеш JFrame?',['edu.school','bin','JRE System Library','Заглавната лента'],0,'Класът се създава в пакета edu.school.'],
+['Създаване на JFrame','Кой е правилният път за създаване на JFrame?',['New → Other → WindowsBuilder → Swing Designer → JFrame','New → Java Project → JFrame','File → Open → JFrame','Run → Swing Designer → JFrame'],0,'Избираш New → Other → WindowsBuilder → Swing Designer → JFrame.'],
+['Създаване на JFrame','Какво име трябва да зададеш на прозореца(фрейма)?',['nameFrame','namePackage','nameProject','nameLabel'],0,'Например SchoolFrame.'],
+['Графичен редактор','Как отваряш проекта с графичния редактор?',['Десен бутон върху .java → Open With → WindowsBuilder Editor','Двоен клик върху src','File → New → Java Project','Run → Design'],0,'Избираш Open With → WindowsBuilder Editor.'],
+['Графичен редактор','Кой изглед избираш за графично проектиране?',['Design','Source','Console','Problems'],0,'Избираш Design.'],
+['Свойства на прозореца','Кое свойство задава текста в заглавната лента на JFrame?',['title','text','Variable','name'],0,'Свойството title задава заглавието на прозореца.'],
+['Етикет JLabel','Кой инструмент използваш за създаване на етикет?',['JLabel','JTextField','JButton','JFrame'],0,'JLabel създава етикет.'],
+['Етикет JLabel','Кое свойство задава видимия текст на етикета?',['text','title','Variable','layout'],0,'Свойството text задава текста на JLabel.'],
+['Етикет JLabel','С какво трябва да започва стойността на свойство Variable за етикет?',['lbl','txt','btn','frm'],0,'Префиксът е lbl, например lblIme.'],
+['Текстово поле','Кой инструмент създава текстово поле за въвеждане?',['JTextField','JLabel','JButton','JPanel'],0,'JTextField позволява въвеждане на текст.'],
+['Текстово поле','Кое свойство задава началния текст в JTextField?',['text','title','Variable','action'],0,'Свойството text задава началния текст.'],
+['Текстово поле','С какво започва стойността на свойство Variable за текстово поле?',['txt','lbl','btn','frm'],0,'Префиксът е txt, например txtIme.'],
+['Бутон JButton','Кой инструмент създава бутон?',['JButton','JLabel','JTextField','JFrame'],0,'JButton създава бутон.'],
+['Бутон JButton','Кое свойство задава надписа върху бутона?',['text','title','Variable','layout'],0,'Свойството text задава надписа.'],
+['Бутон JButton','С какво започва стойността на свойство Variable за бутон?',['btn','lbl','txt','frm'],0,'Префиксът е btn, например btnIzhod.'],
+['Разположение','Кой Layout позволява свободно местене и преоразмеряване на компонентите?',['Absolute Layout','Border Layout','Grid Layout','Flow Layout'],0,'Absolute Layout позволява свободно позициониране.'],
+['Действие на бутон','Как се задава действие на бутон?',['Двукратно щракване върху бутона','Еднократно щракване върху заглавната лента','Десен бутон върху проекта → Delete','Двукратно щракване върху папката src'],0,'Двукратното щракване генерира обработчик на събитие.'],
+['Действие на бутон','Къде се записва кодът за действието на бутона?',['Вътре в тялото на метода public void ..., непосредствено след отварящата фигурна скоба {','Преди декларацията public void','След затварящата фигурна скоба на метода }','В свойството title на прозореца'],0,'Кодът се записва вътре в метода, непосредствено след отварящата фигурна скоба { на public void ... .'],
+['Бутон Изход','Кой код затваря програмата при натискане на бутон Изход?',['System.exit(0);','JOptionPane.showMessageDialog(null,"Изход");','System.out.println("Изход");','this.dispose("0");'],0,'System.exit(0); прекратява изпълнението на програмата.'],
+['Диалогова кутия','Кой код показва текст в стандартна диалогова кутия?',['JOptionPane.showMessageDialog(null,"Здравей!");','System.exit(0);','System.out.println("Здравей!");','JLabel.setText("Здравей!");'],0,'JOptionPane.showMessageDialog(null,"текст на съобщението"); показва диалогова кутия.']
+];
+
+const visuals=[
+ ['Eclipse IDE','<div style="font-size:28px">☕ Eclipse IDE</div><br><br>Работна област<br><br>Welcome to Eclipse'],
+ ['Project Explorer','📁 Работна област<br><br>📁 Проект 1<br>📁 Проект 2<br>📁 Проект 3'],
+ ['Java Editor','<div style="color:#a9c7ff">Java Editor</div><br><br>Редактор за програмен код<br><br>public class MyApplication<br>{<br>　// Java application<br>}'],
+ ['Swing Designer','<div style="font-size:22px">▣ Swing Designer</div><br><br>Графична работна област<br><br>Компоненти и оформление'],
+ ['Design View','┌────────────────────┐<br>│　　　　　　　　　│<br>│　Графичен прозорец │<br>│　　　　　　　　　│<br>└────────────────────┘'],
+ ['Properties Panel','<b>Properties</b><br><br>Component<br>Appearance<br>Layout<br>Advanced'],
+ ['Swing Components','<b>Component Palette</b><br><br>▤ Компонент 1<br>▱ Компонент 2<br>▣ Компонент 3'],
+ ['Layout View','<b>Работна област</b><br><br>┌──────────────────┐<br>│　　　　　　　　│<br>│　　　　　　　　│<br>└──────────────────┘'],
+ ['Java Workspace','<b>Java Development</b><br><br>Source Editor<br>Project Explorer<br>Console'],
+ ['Application Window','<b>Preview</b><br><br>┌──────────────────┐<br>│　Приложение　　　│<br>│　　　　　　　　│<br>└──────────────────┘']
+];
+
+let index=0,score=0,wrong=0,student='',exitAttempts=0,finished=false,shuffled=[];
+function key(id){return STORE+id.toUpperCase()}
+function shuffle(){shuffled=questions.map((q,i)=>({q,answers:q[2].map((a,j)=>({a,j})).sort(()=>Math.random()-.5)}));}
+function render(){
+ const q=shuffled[index].q;
+ $('category').textContent=q[0];$('question').textContent=q[1];
+ const visual=visuals[Math.min(Math.floor(index/3),visuals.length-1)];
+ $('visual').innerHTML='<div class="idebar">'+visual[0]+'</div><div class="idebody">'+visual[1]+'</div>';
+ $('options').innerHTML='';$('feedback').classList.add('hidden');$('next').classList.add('hidden');
+ shuffled[index].answers.forEach(item=>{
+  const b=document.createElement('button');b.className='choice';b.textContent=item.a;
+  b.addEventListener('click',()=>answer(item.j));$('options').appendChild(b);
+ });
+ $('score').textContent=score+' точки';$('number').textContent=`Въпрос ${index+1} от 26`;$('bar').style.width=(index/26*100)+'%';
+}
+function answer(n){
+ if(finished)return;
+ const q=shuffled[index].q,correct=n===q[3];
+ if(correct)score+=10;else wrong++;
+ [...$('options').children].forEach(b=>{b.disabled=true;if(b.textContent===q[2][q[3]])b.classList.add('good');else if(b.textContent===q[2][n])b.classList.add('bad')});
+ $('score').textContent=score+' точки';$('feedback').className='feedback '+(correct?'good':'bad');
+ $('feedback').textContent=(correct?'✓ Правилен отговор! +10 точки. ':'✗ Грешен отговор. ')+q[4];
+ $('next').classList.remove('hidden');$('next').textContent=index===25?'Приключи изпитването':'Следващ въпрос →';
+}
+function save(state){
+ try{localStorage.setItem(key(student),JSON.stringify({state,score,wrong,index,exitAttempts,finished:true,date:new Date().toISOString()}));}catch(e){}
+}
+function showResult(failed){
+ if(finished)return;finished=true;if(failed)score=0;save(failed?'failed':'completed');
+ $('game').classList.add('hidden');$('warning').classList.add('hidden');$('kicked').classList.add('hidden');$('result').classList.remove('hidden');
+ $('resultIcon').textContent=failed?'⛔':'🏆';$('resultTitle').textContent=failed?'Изпитването е прекратено':'Изпитването е приключило';
+ $('resultStudent').textContent='Ученик: '+student;$('finalScore').textContent=failed?'0 / 260':score+' / 260';
+ $('grade').textContent='Оценка: '+(failed?'Слаб (2)':grade(score));
+ $('details').textContent=failed?'Оценката е поставена поради повторен опит за напускане.':`Верни отговори: ${26-wrong} от 26. Грешни отговори: ${wrong}.`;
+ $('review').textContent=failed?'Изпитването е прекратено по правилата.':'Резултатът е записан за идентификационен код '+student+'.';
+}
+$('gradingInfo').innerHTML = `
+<h3>Формула за оценяване</h3>
+<p>Всеки верен отговор носи 10 точки.</p>
+<p><b>Общ брой точки = брой верни отговори × 10</b></p>
+<hr>
+<h3>Скала за оценяване</h3>
+<table style="width:100%;border-collapse:collapse">
+<tr><td>234–260 точки (>90%)</td><td>Отличен (6)</td></tr>
+<tr><td>208–233 точки (80%)</td><td>Много добър (5)</td></tr>
+<tr><td>166–207 точки (64%)</td><td>Добър (4)</td></tr>
+<tr><td>130–165 точки (50%)</td><td>Среден (3)</td></tr>
+<tr><td>0–129 точки (<50%)</td><td>Слаб (2)</td></tr>
+</table>
+`;
+function grade(s){if(s>=234)return'Отличен (6)';if(s>=208)return'Много добър (5)';if(s>=166)return'Добър (4)';if(s>=130)return'Среден (3)';return'Слаб (2)';}
+async function fullscreen(){try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();}catch(e){/* Fullscreen може да е забранен от браузъра. */}}
+function active(){return !finished&&!$('game').classList.contains('hidden');}
+function exitAttempt(){
+ if(!active())return;
+ exitAttempts++;
+ if(exitAttempts===1){$('warning').classList.remove('hidden');}
+ else{$('kicked').classList.remove('hidden');save('failed');}
+}
+document.addEventListener('fullscreenchange',()=>{if(active()&&!document.fullscreenElement)exitAttempt();});
+document.addEventListener('visibilitychange',()=>{if(active()&&document.visibilityState==='hidden')exitAttempt();});
+window.addEventListener('beforeunload',e=>{if(active()){e.preventDefault();e.returnValue='При напускане на изпитването може да бъде поставена оценка Слаб (2).';}});
+$('start').addEventListener('click',async()=>{
+ const id=$('studentId').value.trim().toUpperCase().replace(/\s/g,'');
+ if(!/^8[A-ZА-Я]-\d{1,2}$/.test(id)){$('loginError').textContent='Невалиден код. Използвай формат 8А-15.';$('loginError').classList.remove('hidden');return;}
+ let prior=null;try{prior=localStorage.getItem(key(id));}catch(e){}
+ if(prior){$('loginError').textContent='Този код вече е използван в този браузър. Не може да се започне нов опит.';$('loginError').classList.remove('hidden');return;}
+ student=id;
+ try{localStorage.setItem(key(student),JSON.stringify({state:'started',date:new Date().toISOString()}));}
+ catch(e){$('loginError').textContent='Не може да се запише опитът. Разреши локалното съхранение в браузъра.';$('loginError').classList.remove('hidden');return;}
+ shuffle();$('studentLabel').textContent='Ученик: '+student;$('login').classList.add('hidden');$('game').classList.remove('hidden');
+ await fullscreen();render();
+});
+$('next').addEventListener('click',()=>{if(index===26)showResult(false);else{index++;render();}});
+$('return').addEventListener('click',async()=>{$('warning').classList.add('hidden');await fullscreen();});
+$('showResult').addEventListener('click',()=>showResult(true));
+$('studentId').addEventListener('input',()=>{$('studentId').value=$('studentId').value.toUpperCase().replace(/\s/g,'');});
+})();
+</script>
+</body>
+</html>
